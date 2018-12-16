@@ -48,7 +48,7 @@ ggplot(data, aes(k, count)) + geom_point() + xlim(c(4,400)) + ylim(c(0,1.5e7)) +
 dev.off()
 ```
 
-![alt text](https://github.com/matthewmoscou/Emo/raw/master/src/common/figures/emo_jellyfish_24mer_distribution.png "Frequency distribution for Ecdeiocolea monostachya sequence data")
+![alt text](figures/emo_jellyfish_24mer_distribution.png "Frequency distribution for Ecdeiocolea monostachya sequence data")
 
 Sequencing of *Ecdeiocolea monostachya* accession E01 exhibits two local maxima, which indicates that this accession is heterozygous and diploid. We used the function `localMaxima` in order to identify the peaks in the distribution.
 
