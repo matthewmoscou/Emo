@@ -1,8 +1,10 @@
 # Emo
 Genome sequencing and annotation of *Ecdeiocolea monostachya*
 
-## Illumina sequencing of *Ecdeiocolea monostachya*
-Sheath tissue from accession E001 was collected, genomic DNA extracted, and DNA sent to Novogene for sequencing. Illumina paired end libraries were generated using inserts of 250bp (DSW66921) and 350bp (DSW66909-V) (150 bp reads). *De novo* assemblies were carried out using several Amazon AWS EC2 instances including (1) m5a.12xlarge (48 CPU, 192 GB RAM), (2) r5.12xlarge (48 CPU, 374 Gb RAM), and (3) XXX.
+The Australian wild grass *Ecdeiocolea monostachya* is a critical outgroup to the Poaceae for comparative genomics analyses. We initiated the genome sequencing of *E. monostachya* in 2018 to identify signatures of genetic innovations in the grasses. More broadly, the sequencing of *E. monostachya* will provide a robust foundation for researchers in cereal genomics to utilise this understudied species as an outgroup in studies of evolutionary events unique to the Poaceae, not limited to our work on the emergence of novel gene families. *E. monostachya* is recalcitrant to growth from seed or after transplant to botanical gardens. Therefore, we have collected tissue from several individuals from a single site in Australia. *E. monostachya* is expected to be diploid with a genome size of 1.5 Gb based on flow cytometry. We propose to construct large scaffolds of the *E. monostachya genome* using Oxford Nanopore Technologies and Illumina-based sequencing. Parallel work is currently underway to perform RNAseq on sheath, flower, and root tissue. This project will be carried out as an Open Science initiative, ensuring that the academic community will gain immediate access to the genome and annotations as they are developed.
+
+## Illumina-based sequencing of *Ecdeiocolea monostachya*
+Sheath tissue from accession E001 was collected, genomic DNA extracted, and DNA sent to Novogene for sequencing. Illumina paired end libraries were generated using inserts of 250bp (DSW66921) and 350bp (DSW66909-V) (150 bp reads). *De novo* assemblies were carried out using several Amazon AWS EC2 instances including (1) m5a.12xlarge (48 CPU, 192 GB RAM), (2) r5.12xlarge (48 CPU, 374 Gb RAM), and (3) m5.24xlarge (96 CPU, 345 Gb RAM).
 
 ### Trimmomatic cleaning of Illumina PE reads
 Trimmomatic v0.36 was used to clean reads prior to *de novo* assembly. A size limit of 36 bp is set for the retention of paired reads.
@@ -27,15 +29,24 @@ java -jar trimmomatic-0.36.jar PE -threads 16 -phred33 EM009_E1_DSW66921_HTGL5CC
 java -jar trimmomatic-0.36.jar PE -threads 16 -phred33 EM009_E1_DSW66921_HTGL5CCXY_L7_1.fq.gz EM009_E1_DSW66921_HTGL5CCXY_L7_2.fq.gz Ecdeiocolea_monostachya_250_2_gDNA_edena_forward_paired.fq.gz Ecdeiocolea_monostachya_250_2_gDNA_edena_forward_unpaired.fq.gz Ecdeiocolea_monostachya_250_2_gDNA_edena_reverse_paired.fq.gz Ecdeiocolea_monostachya_250_2_gDNA_edena_reverse_unpaired.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:10 MINLEN:150 > Ecdeiocolea_monostachya_250_2_edena_trimmomatic.run.log 2>&1 &
 ```
 
-## Assessment of *k*-mer distribution
-`jellyfish` 1.1.12 was used to assess *k*-mer distribution, determine the presence of heterozygosity, and estimate genome size.
+### Assessment of *k*-mer distribution
+`jellyfish` 1.1.12 was used to assess *k*-mer distribution, determine the presence of heterozygosity, and estimate genome size. Four *k*-mer were selected (17, 24, 27, and 31).
 
 ```bash
+jellyfish count -t 12 -C -m 17 -s 30G -o emo_jellyfish_17mer Ecdeiocolea_monostachya_250_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_reverse_paired.fq
+jellyfish histo -h 3000000 -o emo_jellyfish_17mer.histo emo_jellyfish_17mer_0
+
 jellyfish count -t 48 -C -m 24 -s 30G -o emo_jellyfish_24mer Ecdeiocolea_monostachya_250_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_reverse_paired.fq
 jellyfish histo -h 3000000 -o emo_jellyfish_24mer.histo emo_jellyfish_24mer_0
+
+jellyfish count -t 12 -C -m 27 -s 30G -o emo_jellyfish_27mer Ecdeiocolea_monostachya_250_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_reverse_paired.fq
+jellyfish histo -h 3000000 -o emo_jellyfish_27mer.histo emo_jellyfish_27mer_0
+
+jellyfish count -t 12 -C -m 31 -s 30G -o emo_jellyfish_31mer Ecdeiocolea_monostachya_250_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_reverse_paired.fq > jellyfish.31mer.log 2>&1 &
+jellyfish histo -h 3000000 -o emo_jellyfish_31mer.histo emo_jellyfish_31mer_0
 ```
 
-`R` and `ggplot2` were used to visualize the results.
+`R` and `ggplot2` were used to visualize the results, *k*=24 is shown below.
 
 ```R
 library(ggplot2)
@@ -74,6 +85,7 @@ The results below indicate the peaks are at 77 and 161.
  [1]   1  77 161 247 299 326 329 331 334 389 395
 ```
 
+#### findGSE
 Next, we use [findGSE](https://github.com/schneebergerlab/findGSE) from the Schneeberger laboratory to get an estimate of genome size.
 
 ```R
@@ -87,7 +99,8 @@ Genome size estimate for emo_jellyfish_24mer.histo: 1477061969 bp.
 
 The final estimate was 1.47 Gb. This is a slightly lower genome size estimate as compared to flow cytometry of propidium iodide-stained nuclei, of which this accession was found to have 2C = ~2.0 pg = ~2.0 Gb)
 
-`KmerGenie` 1.7048 was used to characterize the *k*-mer distribution based on several *k* and to identify an optimal *k* for genome assembly. Code was downloaded from [KmerGenie](http://kmergenie.bx.psu.edu/).
+#### KmerGenie
+`KmerGenie` 1.7048 was used to characterize the *k*-mer distribution based on several *k* and to identify an optimal *k* for genome assembly. The file `list_files` was simply the FASTQ files for all Illumina sequencing data. Code was downloaded from [KmerGenie](http://kmergenie.bx.psu.edu/).
 
 ```bash
 ~/genome/src/kmergenie-1.7051/kmergenie list_files --diploid -t 46
@@ -96,6 +109,49 @@ The final estimate was 1.47 Gb. This is a slightly lower genome size estimate as
 [alt text](figures/histograms.dat.png "Optimal k-mer analysis")
 
 The best predicted *k* = 107 with a predicted genome size of 1.31 Gb. Results can be found in `data/kmerGenie`.
+
+#### GenomeScope
+We used [GenomeScope](http://qb.cshl.edu/genomescope/) to estimate genome size.
+
+```
+k = 17
+property                      min               max               
+Heterozygosity                2.64181%          2.64873%          
+Genome Haploid Length         734,023,481 bp    734,209,998 bp    
+Genome Repeat Length          430,584,456 bp    430,693,869 bp    
+Genome Unique Length          303,439,025 bp    303,516,129 bp    
+Model Fit                     89.126%           95.3707%          
+Read Error Rate               0.198027%         0.198027%
+
+k = 24
+property                      min               max               
+Heterozygosity                2.59395%          2.59696%          
+Genome Haploid Length         839,124,480 bp    839,220,218 bp    
+Genome Repeat Length          359,761,145 bp    359,802,191 bp    
+Genome Unique Length          479,363,335 bp    479,418,027 bp    
+Model Fit                     93.8441%          96.7131%          
+Read Error Rate               0.204901%         0.204901%
+
+k = 27
+property                      min               max               
+Heterozygosity                2.47079%          2.47592%          
+Genome Haploid Length         774,237,454 bp    774,395,503 bp    
+Genome Repeat Length          265,031,305 bp    265,085,407 bp    
+Genome Unique Length          509,206,149 bp    509,310,096 bp    
+Model Fit                     94.3308%          96.7982%          
+Read Error Rate               0.211569%         0.211569%
+
+k = 31
+property                      min               max               
+Heterozygosity                2.32526%          2.33019%          
+Genome Haploid Length         782,469,719 bp    782,632,214 bp    
+Genome Repeat Length          241,596,167 bp    241,646,339 bp    
+Genome Unique Length          540,873,552 bp    540,985,875 bp    
+Model Fit                     94.7857%          96.8541%          
+Read Error Rate               0.202396%         0.202396%
+```
+
+Genome size estimates were considerably smaller than other software.
 
 ### *De novo* assembly using edena
 `edena` 3.131028 was used for *de novo* genome assembly.
@@ -140,10 +196,15 @@ soapdenovo2-63mer pregraph -s Emo.config -K 63 -R -p 40 -o Emo_soapdenovo2_k63 1
 soapdenovo2-63mer contig -g Emo_soapdenovo2_k63 -R -p 46 1>contig.log 2>contig.err &
 soapdenovo2-63mer map -s Emo.config -g Emo_soapdenovo2_k63 -p 46 1>map.log 2>map.err &
 soapdenovo2-63mer scaff -g Emo_soapdenovo2_k63 -F -p 46 1>scaff.log 2>scaff.err &
+
+soapdenovo2-63mer pregraph -s Emo.config -K 63 -R -p 40 -o Emo_soapdenovo2_k63 1>pregraph.log 2>pregraph.err
+soapdenovo2-63mer contig -g Emo_soapdenovo2_k63 -R -p 46 1>contig.log 2>contig.err &
+soapdenovo2-63mer map -s Emo.config -g Emo_soapdenovo2_k63 -p 46 1>map.log 2>map.err &
+soapdenovo2-63mer scaff -g Emo_soapdenovo2_k63 -F -p 46 1>scaff.log 2>scaff.err &
 ```
 
 ### *De novo* assembly using minia
-`minia` is a short-read assembler based on a de Bruijn graph with low memory requirements. Source code was cloned from Github from [minia](https://github.com/GATB/minia).
+`minia` is a short-read assembler based on a de Bruijn graph with low memory requirements. 
 
 ```bash
 ~/genome/bin/minia -in Ecdeiocolea_monostachya_gDNA_paired.fa -kmer-size 21 -out Emo.minia.k21 > Emo.minia.k21.log 2>&1 &
@@ -165,19 +226,17 @@ soapdenovo2-63mer scaff -g Emo_soapdenovo2_k63 -F -p 46 1>scaff.log 2>scaff.err 
 ```
 
 ### Assessment of *de novo* genome assemblies using Illumina
+An initial assessment of *de novo* genome assemblies using Illumina sequencing data was performed using `assembly-stats`. Source code was cloned from Github from [assembly-stats](https://github.com/sanger-pathogens/assembly-stats).
 
 ```bash
 assembly-stats -t Emo.minia.k*.contigs.fa > Emo.minia.stats.txt
 ```
 
-
-```bash
-./scripts/run_BUSCO.py -i Emo.minia.k21.contigs.fa -o Emo.minia.k21.busco --lineage_path embryophyta_odb9 -m genome -c 16 > Emo.minia.k21.busco.log 2>&1 &
-```
-
 ```bash
 export AUGUSTUS_CONFIG_PATH=/usr/share/augustus/config/
 ```
+
+Our principal strategy for assessing the quality of a genome assembly was to determine the assembly that had both the highest rate of RNAseq mapping and number of complete BUSCO genes based on a uniform `hisat2` and `Cufflinks` gene model prediction.
 
 ```bash
 ~/emo/src/hisat2-2.1.0/hisat2-build -p 46 Emo.minia.k$1.contigs.fa Emo.minia.k$1.contigs
@@ -188,14 +247,151 @@ cufflinks/cufflinks -p 4 Emo.minia.k$1.contigs_$2_RNAseq.cufflinks.sorted.bam
 ```
 
 ```
+cuffmerge -o cuffmerge_Emo_idba_scaffold -p 12 cuffmerge_Emo_idba_scaffold.txt
+cuffmerge -o cuffmerge_Emo_minia_k121 -p 12 cuffmerge_Emo_minia_k121.txt
+cuffmerge -o cuffmerge_Emo_soapdenovo2_k63 -p 12 cuffmerge_Emo_soapdenovo2_k63.txt
+
+gffread cuffmerge_Emo_idba_scaffold/merged.gtf -g Emo.idba.scaffold.fa -w Emo.idba.scaffold_transcripts.fa
+gffread cuffmerge_Emo_minia_k121/merged.gtf -g Emo.minia.k121.contigs.fa -w Emo.minia.k121.contigs_transcripts.fa
+gffread cuffmerge_Emo_soapdenovo2_k63/merged.gtf -g Emo_soapdenovo2_k63.scafSeq -w Emo_soapdenovo2_k63.scafSeq_transcripts.fa
+
+./scripts/run_BUSCO.py -i Emo.idba.scaffold_transcripts.fa -o Emo.idba.scaffold_transcripts.busco --lineage_path embryophyta_odb9 -m transcriptome -c 12 > Emo.idba.scaffold_transcripts.busco.log 2>&1 &
+./scripts/run_BUSCO.py -i Emo.minia.k121.contigs_transcripts.fa -o Emo.minia.k121.contigs_transcripts.busco --lineage_path embryophyta_odb9 -m transcriptome -c 16 > Emo.minia.k121.contigs_transcripts.busco.log 2>&1 &
+./scripts/run_BUSCO.py -i Emo_soapdenovo2_k63.scafSeq_transcripts.fa -o Emo_soapdenovo2_k63.scafSeq_transcripts.busco --lineage_path embryophyta_odb9 -m transcriptome -c 12 > Emo_soapdenovo2_k63.scafSeq_transcripts.busco.log 2>&1 &
+
+
 cuffmerge -s reconciled_assembly_v4.fa -p 4 gtf_files.txt
 gffread merged_asm/merged.gtf -g reconciled_assembly_v4.fa -w transcripts_CGS.fa
 TransDecoder.LongOrfs -t transcripts_CGS.fa
 ./interproscan.sh --output-dir . --input longest_orfs.pep --iprlookup --seqtype p --appl Coils,Gene3D,ProSitePatterns,Pfam,PANTHER,SUPERFAMILY > longest_orfs_interproscan.log 2>&1 &
-
 ```
+
+| Assembly            | Flower |  Root  | Sheath |
+|:-------------------:|:------:|:------:|:------:|
+| IDBA-UD             | 75.28% | 74.50% | 73.82% |
+| SOAPdenovo2 (*k*=63)| 64.53% | 63.47% | 62.81% |
+| minia (*k*=121)     | 73.28% | 72.62% | 72.58% |
+
+N = 1,440
+
+| Assembly           | Data | Complete | Singleton | Duplicated | Fragment | Missing |
+|:------------------:|:----:|:--------:|:---------:|:----------:|:--------:|:-------:|
+|IDBA-UD             | gDNA | 42.5%    | 28.3%     | 14.2%      | 29.0%    | 28.5%   |
+|minia (*k*=121)     | gDNA | 27.7%    | 16.9%     | 10.8%      | 31.7%    | 40.6%   |
+|SOAPDenovo2 (*k*=63)| gDNA | 34.1%    | 19.4%     | 14.7%      | 27.8%    | 38.1%   |
+|Trinity (Sheath)    | mRNA | 86.6%    | 23.4%     | 63.2%      | 9.5%     | 3.9%    |
+|Trinity (Root)      | mRNA | 85.9%    | 26.5%     | 59.4%      | 9.1%     | 5.0%    |
+|Trinity (Flower)    | mRNA | 88.4%    | 25.7%     | 62.7%      | 7.4%     | 4.2%    |
+
 
 ## Nanopore sequencing of *Ecdeiocolea monostachya*
 
 ### *De novo* assembly using Wtdbg2 
 Wtdbg2 is a fuzzy Bruijn graph approach to long noisy reads assembly. Source code was cloned from Github from [wtdbg2](https://github.com/ruanjue/wtdbg2).
+
+```bash
+wtdbg2 -i Emo_OND.clean.fa -fo Emo.wtdbg2 -t 48 -p 19 -AS2 -e 2 -L5000
+wtpoa-cns -t 48 -i Emo.wtdbg2.ctg.lay -fo Emo.wtdbg2.ctg.lay.fa
+```
+
+This produced an initial assembly of 1.48 Gb. Wtdbg2 provides an uncorrected reference genome and requires polishing. It is unclear how many rounds of correction are required, also the use of Racon on a large genome requires substantial RAM that was not available for the initial assembly (to be performed in the near future).
+
+```bash
+minimap2 -ax map-ont -t 48 Emo.wtdbg2.ctg.lay.fa ../nanopore/Emo_OND.clean.fq > Emo.wtdbg2.ctg.lay.Emo_OND.clean.sam
+samtools view -@ 12 -Sb Emo.wtdbg2.ctg.lay.Emo_OND.clean.sam > Emo.wtdbg2.ctg.lay.Emo_OND.clean.bam
+samtools sort -@ 12 -o Emo.wtdbg2.ctg.lay.Emo_OND.clean.sort.bam Emo.wtdbg2.ctg.lay.Emo_OND.clean.bam
+samtools view Emo.wtdbg2.ctg.lay.Emo_OND.clean.sort.bam | ~/genome/src/wtdbg2/wtpoa-cns -t 12 -d Emo.wtdbg2.ctg.lay.fa -i - -fo Emo.wtdbg2.ctg.lay.m2.fa
+
+minimap2 -ax map-ont -t 90 Emo.wtdbg2.ctg.lay.m2.fa ../nanopore/Emo_OND.clean.fq > Emo.wtdbg2.ctg.lay.m2.Emo_OND.clean.sam
+samtools view -@ 12 -Sb Emo.wtdbg2.ctg.lay.m2.Emo_OND.clean.sam > Emo.wtdbg2.ctg.lay.m2.Emo_OND.clean.bam
+samtools sort -@ 12 -o Emo.wtdbg2.ctg.lay.m2.Emo_OND.clean.sort.bam Emo.wtdbg2.ctg.lay.m2.Emo_OND.clean.bam
+samtools view Emo.wtdbg2.ctg.lay.m2.Emo_OND.clean.sort.bam | ~/genome/src/wtdbg2/wtpoa-cns -t 12 -d Emo.wtdbg2.ctg.lay.m2.fa -i - -fo Emo.wtdbg2.ctg.lay.m3.fa
+```
+
+Below is the code that would be used iteratively in order to polish the genome sequence.
+
+```bash
+minimap2 -ax sr -t 12 Emo.wtdbg2.ctg.lay.m2.fa ../abyss/Ecdeiocolea_monostachya_250_1_gDNA_forward_paired.fq ../abyss/Ecdeiocolea_monostachya_250_1_gDNA_reverse_paired.fq > Emo.wtdbg2.ctg.lay.m2.250.1.sam
+minimap2 -ax sr -t 12 Emo.wtdbg2.ctg.lay.m2.fa ../abyss/Ecdeiocolea_monostachya_250_2_gDNA_forward_paired.fq ../abyss/Ecdeiocolea_monostachya_250_2_gDNA_reverse_paired.fq > Emo.wtdbg2.ctg.lay.m2.250.2.sam
+minimap2 -ax sr -t 12 Emo.wtdbg2.ctg.lay.m2.fa ../abyss/Ecdeiocolea_monostachya_350_1_gDNA_forward_paired.fq ../abyss/Ecdeiocolea_monostachya_350_1_gDNA_reverse_paired.fq > Emo.wtdbg2.ctg.lay.m2.350.1.sam
+minimap2 -ax sr -t 12 Emo.wtdbg2.ctg.lay.m2.fa ../abyss/Ecdeiocolea_monostachya_350_2_gDNA_forward_paired.fq ../abyss/Ecdeiocolea_monostachya_350_2_gDNA_reverse_paired.fq > Emo.wtdbg2.ctg.lay.m2.350.2.sam
+minimap2 -ax sr -t 12 Emo.wtdbg2.ctg.lay.m2.fa ../abyss/Ecdeiocolea_monostachya_350_3_gDNA_forward_paired.fq ../abyss/Ecdeiocolea_monostachya_350_3_gDNA_reverse_paired.fq > Emo.wtdbg2.ctg.lay.m2.350.3.sam
+minimap2 -ax sr -t 12 Emo.wtdbg2.ctg.lay.m2.fa ../abyss/Ecdeiocolea_monostachya_350_4_gDNA_forward_paired.fq ../abyss/Ecdeiocolea_monostachya_350_4_gDNA_reverse_paired.fq > Emo.wtdbg2.ctg.lay.m2.350.4.sam
+samtools view -@ 36 -Sb Emo.wtdbg2.ctg.lay.m2.250.1.sam > Emo.wtdbg2.ctg.lay.m2.250.1.bam
+samtools view -@ 36 -Sb Emo.wtdbg2.ctg.lay.m2.250.2.sam > Emo.wtdbg2.ctg.lay.m2.250.2.bam
+samtools view -@ 36 -Sb Emo.wtdbg2.ctg.lay.m2.350.1.sam > Emo.wtdbg2.ctg.lay.m2.350.1.bam
+samtools view -@ 36 -Sb Emo.wtdbg2.ctg.lay.m2.350.2.sam > Emo.wtdbg2.ctg.lay.m2.350.2.bam
+samtools view -@ 36 -Sb Emo.wtdbg2.ctg.lay.m2.350.3.sam > Emo.wtdbg2.ctg.lay.m2.350.3.bam
+samtools view -@ 36 -Sb Emo.wtdbg2.ctg.lay.m2.350.4.sam > Emo.wtdbg2.ctg.lay.m2.350.4.bam
+samtools sort -@ 36 -o Emo.wtdbg2.ctg.lay.m2.250.1.sort.bam Emo.wtdbg2.ctg.lay.m2.250.1.bam
+samtools sort -@ 36 -o Emo.wtdbg2.ctg.lay.m2.250.2.sort.bam Emo.wtdbg2.ctg.lay.m2.250.2.bam
+samtools sort -@ 36 -o Emo.wtdbg2.ctg.lay.m2.350.1.sort.bam Emo.wtdbg2.ctg.lay.m2.350.1.bam
+samtools sort -@ 36 -o Emo.wtdbg2.ctg.lay.m2.350.2.sort.bam Emo.wtdbg2.ctg.lay.m2.350.2.bam
+samtools sort -@ 36 -o Emo.wtdbg2.ctg.lay.m2.350.3.sort.bam Emo.wtdbg2.ctg.lay.m2.350.3.bam
+samtools sort -@ 36 -o Emo.wtdbg2.ctg.lay.m2.350.4.sort.bam Emo.wtdbg2.ctg.lay.m2.350.4.bam
+samtools merge -@ 48 Emo.wtdbg2.ctg.lay.m2.all.sort.bam Emo.wtdbg2.ctg.lay.m2.250.*.sort.bam Emo.wtdbg2.ctg.lay.m2.350.*.sort.bam
+samtools index -@ 48 Emo.wtdbg2.ctg.lay.m2.all.sort.bam
+java -Xmx340G -jar ../src/pilon-1.23.jar --genome Emo.wtdbg2.ctg.lay.m2.fa --bam Emo.wtdbg2.ctg.lay.m2.all.sort.bam --output Emo.wtdbg2.ctg.lay.m3 --threads 48 --diploid > pilon.m2.run.log 2>&1 &
+racon -t 90 ../abyss/Ecdeiocolea_monostachya_gDNA_paired.fq Emo.wtdbg2.ctg.lay.m2.all.sort.sam Emo.wtdbg2.ctg.lay.m2.fa > racon.run.log 2>&1 &
+```
+
+
+### *De novo* assembly using canu
+
+```bash
+canu -p Emo.canu -d Emo-oxford genomeSize=1.5g -nanopore-corrected Emo_OND.clean.fa > Emo.canu.log.2 2>&1 &
+```
+
+
+### *De novo* assembly and polishing using the ONT pipeline
+The Oxford NanoPore Technologies assembly and Illumina polishing pipeline was cloned from [ONT-assembly-polish](https://github.com/nanoporetech/ont-assembly-polish).
+
+```bash
+cat Ecdeiocolea_monostachya_250_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_forward_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_forward_paired.fq > Ecdeiocolea_monostachya_gDNA_forward.fq
+cat Ecdeiocolea_monostachya_250_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_250_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_1_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_2_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_3_gDNA_reverse_paired.fq Ecdeiocolea_monostachya_350_4_gDNA_reverse_paired.fq > Ecdeiocolea_monostachya_gDNA_reverse.fq
+```
+
+### *De novo* assembly using minimap2/miniasm
+
+```bash
+minimap2 -x ava-ont -t 90 OND00003.clean.fq OND00009.clean.fq | gzip -1 > reads.paf.gz
+miniasm -f Emo_OND.clean.fq reads.paf.gz > Emo.miniasm.gfa &
+
+minimap2 -ax map-ont -t 90 Emo.miniasm.fa ../nanopore/Emo_OND.clean.fq > Emo.miniasm.Emo_OND.clean.sam
+samtools view -@ 12 -Sb Emo.wtdbg2.ctg.lay.OND00003.clean.sam > Emo.wtdbg2.ctg.lay.OND00003.clean.bam
+samtools sort -@ 12 -o Emo.wtdbg2.ctg.lay.OND00003.clean.sort.bam Emo.wtdbg2.ctg.lay.OND00003.clean.bam
+
+racon -t 90 ../abyss/Ecdeiocolea_monostachya_gDNA_paired.fq Emo.wtdbg2.ctg.lay.m2.all.sort.sam Emo.wtdbg2.ctg.lay.m2.fa > racon.run.log 2>&1 &
+```
+
+The resulting assembly was 963.6 Mb.
+
+### *De novo* assembly using MaSuRCA
+[MaSuRCA](https://github.com/alekseyzimin/masurca)
+
+```bash
+~/genome/src/MaSuRCA-3.3.0/bin/masurca masurca_contig.txt
+./assembly.sh > assembly.log 2>&1 &
+```
+
+
+### Assessment of *de novo* genome assemblies using Nanopore and/or Illumina
+To be completed soon.
+
+```bash
+assembly-stats -t Emo.minia.k*.contigs.fa > Emo.minia.stats.txt
+assembly-stats Emo.miniasm.fa > Emo.miniasm.stats.txt
+```
+
+
+## Software for error correction in Nanopore assemblies
+[Pilon](https://github.com/broadinstitute/pilon)
+[Racon](https://github.com/isovic/racon)
+
+
+## Other assemblers to consider
+[platanus](http://platanus.bio.titech.ac.jp/platanus-assembler)
+[redundans](https://github.com/Gabaldonlab/redundans)
+
+## Literature
+[Clown fish genome](https://academic.oup.com/gigascience/article/7/3/gix137/4803946)
