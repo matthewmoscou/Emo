@@ -51,8 +51,8 @@ jellyfish histo -h 3000000 -o emo_jellyfish_31mer.histo emo_jellyfish_31mer_0
 ```R
 library(ggplot2)
 
-data = data.frame(data)
 data = read.table(file="emo_jellyfish_24mer.histo.ID", header=T)
+data = data.frame(data)
 
 postscript(file="emo_jellyfish_24mer_distribution.ps", width=6, height=4)
 ggplot(data, aes(k, count)) + geom_point() + xlim(c(4,400)) + ylim(c(0,1.5e7)) + xlab("Frequency") + ylab("Total counts")
@@ -197,10 +197,10 @@ soapdenovo2-63mer contig -g Emo_soapdenovo2_k63 -R -p 46 1>contig.log 2>contig.e
 soapdenovo2-63mer map -s Emo.config -g Emo_soapdenovo2_k63 -p 46 1>map.log 2>map.err &
 soapdenovo2-63mer scaff -g Emo_soapdenovo2_k63 -F -p 46 1>scaff.log 2>scaff.err &
 
-soapdenovo2-63mer pregraph -s Emo.config -K 63 -R -p 40 -o Emo_soapdenovo2_k63 1>pregraph.log 2>pregraph.err
-soapdenovo2-63mer contig -g Emo_soapdenovo2_k63 -R -p 46 1>contig.log 2>contig.err &
-soapdenovo2-63mer map -s Emo.config -g Emo_soapdenovo2_k63 -p 46 1>map.log 2>map.err &
-soapdenovo2-63mer scaff -g Emo_soapdenovo2_k63 -F -p 46 1>scaff.log 2>scaff.err &
+soapdenovo2-127mer pregraph -s Emo.config -K 107 -R -p 40 -o Emo_soapdenovo2_k107 1>pregraph.log 2>pregraph.err
+soapdenovo2-127mer contig -g Emo_soapdenovo2_k107 -R -p 46 1>contig.log 2>contig.err &
+soapdenovo2-127mer map -s Emo.config -g Emo_soapdenovo2_k107 -p 46 1>map.log 2>map.err &
+soapdenovo2-127mer scaff -g Emo_soapdenovo2_k107 -F -p 46 1>scaff.log 2>scaff.err &
 ```
 
 ### *De novo* assembly using minia
@@ -236,7 +236,7 @@ assembly-stats -t Emo.minia.k*.contigs.fa > Emo.minia.stats.txt
 export AUGUSTUS_CONFIG_PATH=/usr/share/augustus/config/
 ```
 
-Our principal strategy for assessing the quality of a genome assembly was to determine the assembly that had both the highest rate of RNAseq mapping and number of complete BUSCO genes based on a uniform `hisat2` and `Cufflinks` gene model prediction.
+Our principal strategy for assessing the quality of a genome assembly was to determine the assembly that had both the highest rate of RNAseq mapping and number of complete BUSCO genes based on a uniform `hisat2` and `Cufflinks` gene model prediction. A template protocol for aligning RNAseq data to the `minia` assemblies is shown below.
 
 ```bash
 ~/emo/src/hisat2-2.1.0/hisat2-build -p 46 Emo.minia.k$1.contigs.fa Emo.minia.k$1.contigs
@@ -245,6 +245,8 @@ samtools view -F 4 -Shub Emo.minia.k$1.contigs_$2_RNAseq.cufflinks.sam > Emo.min
 samtools sort -o Emo.minia.k$1.contigs_$2_RNAseq.cufflinks.sorted.bam Emo.minia.k$1.contigs_$2_RNAseq.cufflinks.bam
 cufflinks/cufflinks -p 4 Emo.minia.k$1.contigs_$2_RNAseq.cufflinks.sorted.bam
 ```
+
+`Cuffmerge` is used to merge all `Cufflink` gene models, `gffread` to extract the transcripts, and `BUSCO` to determine the number of complete gene models.
 
 ```
 cuffmerge -o cuffmerge_Emo_idba_scaffold -p 12 cuffmerge_Emo_idba_scaffold.txt
@@ -266,22 +268,24 @@ TransDecoder.LongOrfs -t transcripts_CGS.fa
 ./interproscan.sh --output-dir . --input longest_orfs.pep --iprlookup --seqtype p --appl Coils,Gene3D,ProSitePatterns,Pfam,PANTHER,SUPERFAMILY > longest_orfs_interproscan.log 2>&1 &
 ```
 
+The number of aligned RNAseq reads for each tissue and assembly are shown below.
+
 | Assembly            | Flower |  Root  | Sheath |
 |:-------------------:|:------:|:------:|:------:|
 | IDBA-UD             | 75.28% | 74.50% | 73.82% |
 | SOAPdenovo2 (*k*=63)| 64.53% | 63.47% | 62.81% |
 | minia (*k*=121)     | 73.28% | 72.62% | 72.58% |
 
-N = 1,440
+The BUSCO dataset is based on 1,440 (generally) single copy orthologs. At this stage, IDBA-UD from Illumina data has done best, but clearly a number of gene models are missing. This is due to the small insert size for Illumina data and requires long read data.
 
-| Assembly           | Data | Complete | Singleton | Duplicated | Fragment | Missing |
-|:------------------:|:----:|:--------:|:---------:|:----------:|:--------:|:-------:|
-|IDBA-UD             | gDNA | 42.5%    | 28.3%     | 14.2%      | 29.0%    | 28.5%   |
-|minia (*k*=121)     | gDNA | 27.7%    | 16.9%     | 10.8%      | 31.7%    | 40.6%   |
-|SOAPDenovo2 (*k*=63)| gDNA | 34.1%    | 19.4%     | 14.7%      | 27.8%    | 38.1%   |
-|Trinity (Sheath)    | mRNA | 86.6%    | 23.4%     | 63.2%      | 9.5%     | 3.9%    |
-|Trinity (Root)      | mRNA | 85.9%    | 26.5%     | 59.4%      | 9.1%     | 5.0%    |
-|Trinity (Flower)    | mRNA | 88.4%    | 25.7%     | 62.7%      | 7.4%     | 4.2%    |
+| Assembly           | Data            | Complete | Singleton | Duplicated | Fragment | Missing |
+|:------------------:|:---------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+|IDBA-UD             | gDNA (Illumina) | 42.5%    | 28.3%     | 14.2%      | 29.0%    | 28.5%   |
+|minia (*k*=121)     | gDNA (Illumina) | 27.7%    | 16.9%     | 10.8%      | 31.7%    | 40.6%   |
+|SOAPDenovo2 (*k*=63)| gDNA (Illumina) | 34.1%    | 19.4%     | 14.7%      | 27.8%    | 38.1%   |
+|Trinity (Sheath)    | mRNA (Illumina) | 86.6%    | 23.4%     | 63.2%      | 9.5%     | 3.9%    |
+|Trinity (Root)      | mRNA (Illumina) | 85.9%    | 26.5%     | 59.4%      | 9.1%     | 5.0%    |
+|Trinity (Flower)    | mRNA (Illumina) | 88.4%    | 25.7%     | 62.7%      | 7.4%     | 4.2%    |
 
 
 ## Nanopore sequencing of *Ecdeiocolea monostachya*
@@ -385,13 +389,13 @@ assembly-stats Emo.miniasm.fa > Emo.miniasm.stats.txt
 
 
 ## Software for error correction in Nanopore assemblies
-[Pilon](https://github.com/broadinstitute/pilon)
-[Racon](https://github.com/isovic/racon)
+[Pilon](https://github.com/broadinstitute/pilon)  
+[Racon](https://github.com/isovic/racon)  
 
 
 ## Other assemblers to consider
-[platanus](http://platanus.bio.titech.ac.jp/platanus-assembler)
-[redundans](https://github.com/Gabaldonlab/redundans)
+[platanus](http://platanus.bio.titech.ac.jp/platanus-assembler)  
+[redundans](https://github.com/Gabaldonlab/redundans)  
 
 ## Literature
-[Clown fish genome](https://academic.oup.com/gigascience/article/7/3/gix137/4803946)
+[Clown fish genome](https://academic.oup.com/gigascience/article/7/3/gix137/4803946)  
