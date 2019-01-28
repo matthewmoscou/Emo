@@ -106,7 +106,7 @@ The final estimate was 1.47 Gb. This is a slightly lower genome size estimate as
 ~/genome/src/kmergenie-1.7051/kmergenie list_files --diploid -t 46
 ```
 
-[alt text](figures/histograms.dat.png "Optimal k-mer analysis")
+![alt text](figures/histograms.dat.png "Optimal k-mer analysis")
 
 The best predicted *k* = 107 with a predicted genome size of 1.31 Gb. Results can be found in `data/kmerGenie`.
 
@@ -327,7 +327,7 @@ ggplot(data, aes(seqlen)) + geom_histogram() + scale_x_continuous(limits = c(125
 dev.off()
 ```
 
-[alt text](figures/Emo_ONT_seqlen.png "Histogram of sequence lengths")
+![alt text](figures/Emo_ONT_seqlen.png "Histogram of sequence lengths")
 
 ### *De novo* assembly using Wtdbg2 
 Wtdbg2 is a fuzzy Bruijn graph approach to long noisy reads assembly. Source code was cloned from Github from [wtdbg2](https://github.com/ruanjue/wtdbg2).
@@ -411,7 +411,7 @@ The resulting assembly was 963.6 Mb.
 
 ## Hybrid (Illumina and Nanopore) assembly of *Ecdeiocolea monostachya*
 ### *De novo* assembly using MaSuRCA
-[MaSuRCA](https://github.com/alekseyzimin/masurca) (Maryland Super Read Cabog Assembler) assembler combines the benefits of deBruijn graph and Overlap-Layout-Consensus assembly approaches. It uses Illumina and either Oxford Nanopore or PacBio sequencing data to assemble a genome. Use of the assembler requires either the use of an existing server or setting one up (which we did here using Amazon AWS, see information below). After compilation, the next major step is setting up the configuratin file [s3://hordeum/temp/masurca_contig.txt](data/masurca_contig.txt).
+[MaSuRCA](https://github.com/alekseyzimin/masurca) (Maryland Super Read Cabog Assembler) assembler combines the benefits of deBruijn graph and Overlap-Layout-Consensus assembly approaches. It uses Illumina and either Oxford Nanopore or PacBio sequencing data to assemble a genome. Use of the assembler requires either the use of an existing server or setting one up (which we did here using Amazon AWS, see information below). After compilation, the next major step is setting up the configuration file [masurca_contig.txt](data/masurca_contig.txt).
 
 ```bash
 ~/genome/src/MaSuRCA-3.3.0/bin/masurca masurca_contig.txt
@@ -441,7 +441,7 @@ Gaps = 1155
 
 The distribution of scaffolds are shown in the following histogram (note that the x-axis is log10 scale).
 
-[alt text](figures/scaffold_lengths.png "Distribution of scaffold length (log10 scale)")
+![alt text](figures/scaffold_lengths.png "Distribution of scaffold length (log10 scale)")
 
 ## Annotation of the hybrid *Ecdeiocolea monostachya* genome
 
