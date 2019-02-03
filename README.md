@@ -443,17 +443,218 @@ The distribution of scaffolds are shown in the following histogram (note that th
 
 ![alt text](figures/scaffold_lengths.png "Distribution of scaffold length (log10 scale)")
 
-## Annotation of the hybrid *Ecdeiocolea monostachya* genome
+### Annotation of the hybrid *Ecdeiocolea monostachya* genome
+Our strategy for annotating the genome of *Ecdeiocolea monostachya* includes the following steps:
+  1. Identification of high confidence gene models based on aligned RNAseq reads (`hisat2`) and gene models using `Cufflinks` or `StringTie`
+  2. *Ab initio* gene prediction using `Maker`
 
+As a benchmark throughout out analyses, we use the presence and proportion of [BUSCO](https://busco.ezlab.org/) genes (v3; embryophyta).
 
-
-### Assessment of *de novo* genome assemblies using Nanopore and/or Illumina
-To be completed soon.
+#### hisat2 RNAseq alignment
+To start, we aligned RNAseq data derived from flower, sheath, and root to the MaSuRCA assembly.
 
 ```bash
-assembly-stats -t Emo.minia.k*.contigs.fa > Emo.minia.stats.txt
-assembly-stats Emo.miniasm.fa > Emo.miniasm.stats.txt
+hisat2-build -p 72 Emo_MaSuRCA_v1.fa Emo_MaSuRCA_v1.fa
+
+hisat2 --max-intronlen 20000 -k 1 -p 64 --no-softclip --dta-cufflinks -x Emo_MaSuRCA_v1.fa -1 Ecdeiocolea_monostachya_E01flower_RNAseq_forward_paired.fq.gz -2 Ecdeiocolea_monostachya_E01flower_RNAseq_forward_paired.fq.gz -S Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.sam
+hisat2 --max-intronlen 20000 -k 1 -p 64 --no-softclip --dta-cufflinks -x Emo_MaSuRCA_v1.fa -1 Ecdeiocolea_monostachya_E01root_RNAseq_forward_paired.fq.gz -2 Ecdeiocolea_monostachya_E01root_RNAseq_forward_paired.fq.gz -S Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.sam
+hisat2 --max-intronlen 20000 -k 1 -p 64 --no-softclip --dta-cufflinks -x Emo_MaSuRCA_v1.fa -1 Ecdeiocolea_monostachya_E01sheath_RNAseq_forward_paired.fq.gz -2 Ecdeiocolea_monostachya_E01sheath_RNAseq_forward_paired.fq.gz -S Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.sam
+
+samtools view -@ 72 -F 4 -Shub Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.sam > Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.bam
+samtools view -@ 72 -F 4 -Shub Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.sam > Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.bam
+samtools view -@ 72 -F 4 -Shub Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.sam > Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.bam
+
+samtools sort -@ 72 -o Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.sort.bam Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.bam
+samtools sort -@ 72 -o Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.sort.bam Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.bam
+samtools sort -@ 72 -o Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.sort.bam Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.bam
 ```
+
+We found high rates of aligned reads that outperformed all previous Illumina-only assemblies.
+
+| Assembly            | Flower |  Root  | Sheath |
+|:-------------------:|:------:|:------:|:------:|
+| MaSuRCA             | 90.80% | 91.01% | 89.45% |
+
+#### Cufflinks-based annotation
+We identified gene models using `cufflinks`, `cuffmerge` is used to merge gene models from individual tissues, `gffread` to extract the transcripts, and `BUSCO` to determine the number of benchmark genes.
+
+```bash
+cufflinks -p 72 -o cufflinks_Emo_MaSuRCA_v1_E01flower Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.sort.bam
+cufflinks -p 72 -o cufflinks_Emo_MaSuRCA_v1_E01root Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.sort.bam
+cufflinks -p 72 -o cufflinks_Emo_MaSuRCA_v1_E01sheath Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.sort.bam
+cuffmerge -o cuffmerge_Emo_MaSuRCA_v1 -p 72 cuffmerge_Emo_MaSuRCA_v1.txt
+gffread cuffmerge_Emo_MaSuRCA_v1/merged.gtf -g Emo_MaSuRCA_v1.fa -w Emo_MaSuRCA_v1_transcripts.fa
+./scripts/run_BUSCO.py -i Emo_MaSuRCA_v1_transcripts.fa -o Emo_MaSuRCA_v1_transcripts.busco --lineage_path embryophyta_odb9 -m transcriptome -c 72 > Emo_MaSuRCA_v1_transcripts.busco.log 2>&1 &
+```
+
+#### Stringtie-based annotation
+In parallel to `cufflinks`, we used StringTie to identify gene models.
+
+```
+stringtie Emo_MaSuRCA_v1_E01flower_RNAseq.cufflinks.sort.bam -o stringtie_Emo_MaSuRCA_v1_E01flower/transcripts.gtf -p 72
+stringtie Emo_MaSuRCA_v1_E01root_RNAseq.cufflinks.sort.bam -o stringtie_Emo_MaSuRCA_v1_E01root/transcripts.gtf -p 72
+stringtie Emo_MaSuRCA_v1_E01sheath_RNAseq.cufflinks.sort.bam -o stringtie_Emo_MaSuRCA_v1_E01sheath/transcripts.gtf -p 72
+stringtie --merge -o stringtie_Emo_MaSuRCA_v1_transcripts.gtf stringtie_Emo_MaSuRCA_v1.txt
+gffread stringtie_Emo_MaSuRCA_v1/merged.gtf -g Emo_MaSuRCA_v1.fa -w stringtie_Emo_MaSuRCA_v1_transcripts.fa
+./scripts/run_BUSCO.py -i stringtie_Emo_MaSuRCA_v1_transcripts.fa -o stringtie_Emo_MaSuRCA_v1_transcripts.busco --lineage_path embryophyta_odb9 -m transcriptome -c 64 > stringtie_Emo_MaSuRCA_v1_transcripts.busco.log 2>&1 &
+```
+
+#### BUSCO results for different annotation pipelines
+MaSuRCA clearly outperformed all other assembly approaches used thus far. Cufflinks outperformed StringTie for the prediction of gene models. Based on this, we selected the Cufflinks gene models as those to use for training gene prediction and for initial analyses of the gene space.
+
+| Assembly           | Pipeline        | Complete | Singleton | Duplicated | Fragment | Missing |
+|:------------------:|:---------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+| MaSuRCA            | Cufflinks       | 95.1%    | 32.9%     | 62.2%      |  2.4%    |  2.5%   |
+| MaSuRCA            | StringTie       | 91.6%    | 38.4%     | 53.2%      |  2.3%    |  6.1%   |
+
+#### Identifying heterozygous contigs using Redundans
+`Redundans` was used to remove heterozygous contigs from the genome (predicted heterozygosity of 2.4%).
+
+```bash
+python redundans.py -f Emo_MaSuRCA_v1.fa -o Emo_redundans -t 72 --nocleaning --nogapclosing > Emo_redundans.log 2>&1 &
+```
+
+Using BUSCO, we found that the resulting non-redudant set contained 91.0% complete BUSCO genes (41.3% singletons, 49.7% duplicated, 2.6% fragmented, and 6.4% missing genes) based on `StringTie` gene models. As this did not significantly improve the number of duplicated genes, we dropped this approach at this stage.
+
+#### Distribution of GC percent in *Ecdeiocolea monostachya* 
+In sequencing genes from grass species, several groups found that the grasses have a bimodal distribution of GC content in genes. To investigate if genes in *Ecdeiocolea monostachya* experience a similar phenomena, we evaluated the distribution of GC content in Cufflinks predicted genes.
+
+```R
+data = read.table(file="Emo_MaSuRCA_v1_cuffmerge_transcripts_GC.txt", header=T)
+data = data.frame(data)
+postscript(file="Emo_GC_distribution.ps", width=4, height=3)
+ggplot(data, aes(GC)) + geom_histogram(bins=100)
+dev.off()
+```
+
+![alt text](figures/Emo_GC_distribution.png "Distribution of GC content in E. monostachya")
+
+There is a monomodal distribution.
+
+```R
+data = read.table(file="HvuFLcDNA23614_GC.txt", header=T)
+data = data.frame(data)
+postscript(file="barley_FLcDNA_GC_distribution.ps", width=4, height=3)
+ggplot(data, aes(GC)) + geom_histogram(bins=100)
+dev.off()
+```
+
+![alt text](figures/barley_FLcDNA_GC_distribution.png "Distribution of GC content in H. vulgare FLcDNA")
+
+In contrast, the analysis of full length cDNAs from *Hordeum vulgare* (barley) clearly show the bimodal distribution. This result is critical, as it means that a single HMM model can be generated for training *ab initio* gene prediction software.
+
+#### Transdecoder and InterProScan
+We designated gene models identified using `hisat2`/`cufflinks` as high confidence gene models and identify the longest open reading frames. It is likely that many of these gene models will be improved with *ab initio* gene prediction, but we will maintain this initial set as an RNAseq evidence reference data set. After identification, we use InterProScan to identify domains in predicted proteins.
+
+```bash
+TransDecoder-TransDecoder-v5.5.0/util/gtf_genome_to_cdna_fasta.pl Emo_MaSuRCA_v1_transcripts.gtf Emo_MaSuRCA_v1.fa > Emo_MaSuRCA_v1_transcripts.fa
+TransDecoder-TransDecoder-v5.5.0/util/gtf_to_alignment_gff3.pl Emo_MaSuRCA_v1_transcripts.gtf > Emo_MaSuRCA_v1_transcripts.gff3
+TransDecoder-TransDecoder-v5.5.0/TransDecoder.LongOrfs -m 50 -t Emo_MaSuRCA_v1_transcripts.fa
+TransDecoder-TransDecoder-v5.5.0/TransDecoder.Predict -t Emo_MaSuRCA_v1_transcripts.fa
+TransDecoder-TransDecoder-v5.5.0/util/cdna_alignment_orf_to_genome_orf.pl Emo_MaSuRCA_v1_transcripts.fa.transdecoder.gff3 Emo_MaSuRCA_v1_transcripts.gff3 Emo_MaSuRCA_v1_transcripts.fa > Emo_MaSuRCA_v1_transcripts.fa.transdecoder.genome.gff3
+./my_interproscan/interproscan-5.27-66.0/interproscan.sh --cpu 72 --output-dir . --input Emo_MaSuRCA_v1_transcripts.fa.transdecoder.pep --iprlookup --seqtype p --appl Coils,Gene3D,ProSitePatterns,Pfam,PANTHER,SUPERFAMILY > Emo_MaSuRCA_v1_transcripts.fa.transdecoder_interproscan.log 2>&1 &
+```
+
+### Maker annotation pipeline
+The [Maker](http://www.yandell-lab.org/software/maker.html) gene annotation pipeline identifies repeats, aligns ESTs and proteins to a genome, produces *ab initio* gene predictions and automatically merges and evaluates these data sources into gene annotations with evidence-based quality values.
+
+#### Generation of a SNAP HMM model
+As we have pre-existing gene models from RNAseq data, we can use these to train a `SNAP` HMM model. This will improve gene annotation using the `Maker` pipeline.
+
+```bash
+# Convert GFF3 to ZFF format
+cat Emo_MaSuRCA_v1_cuffmerge_transcripts.fa.transdecoder.gff3 Emo_MaSuRCA_v1_nr.fa > Emo_MaSuRCA_v1_cuffmerge_transcripts.fa.transdecoder.fa.gff3
+maker2zff Emo_MaSuRCA_v1_cuffmerge_transcripts.fa.transdecoder.fa.gff3
+
+# Evaluate features of genes
+fathom genome.ann genome.dna -gene-stats
+
+# Verify genes do not have obvious errors
+fathom genome.ann genome.dna -validate
+
+# Break sequences into fragments with one gene per sequence
+fathom -genome.ann genome.dna -categorize 1000
+
+# Convert all sequences to plus strand
+fathom uni.ann uni.dna -export 1000 -plus
+
+# Parameter estimation
+mkdir params
+cd params
+forge ../export.ann ../export.dna
+cd ..
+
+# Build HMM
+hmm-assembler.pl my-genome params > my-genome.hmm
+```
+
+####  Maker
+We modify the files `maker_exe.ctl`, `maker_opts.ctl`, and `maker_bopts.ctl` with parameters appropriate for *Ecdeiocolea monostachya*, and run `Maker`.
+
+```bash
+maker maker_exe.ctl maker_opts.ctl maker_bopts.ctl
+```
+
+
+## RNAseq of *Ecdeiocolea monostachya*
+RNAseq was performed on flower, sheath, and root tissue of *Ecdeiocolea monostachya*. Here we trim reads, perform *de novo* transcriptome assembly, and estimate the degree of contamination in all samples.
+
+### Trimming of RNAseq reads
+Reads were cleaned using `Trimmomatic` version 0.36.
+
+```bash
+java -jar trimmomatic-0.36.jar PE -threads 4 -phred33 IHP472_6_1.fq.gz IHP472_6_2.fq.gz Ecdeiocolea_monostachya_E01flower_RNAseq_forward_paired.fq.gz Ecdeiocolea_monostachya_E01flower_RNAseq_forward_unpaired.fq.gz Ecdeiocolea_monostachya_E01flower_RNAseq_reverse_paired.fq.gz Ecdeiocolea_monostachya_E01flower_RNAseq_reverse_unpaired.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:10 MINLEN:36 > Ecdeiocolea_monostachya_E01flower_trimmomatic.run.log 2>&1 &
+java -jar trimmomatic-0.36.jar PE -threads 4 -phred33 IHP472_7_1.fq.gz IHP472_7_2.fq.gz Ecdeiocolea_monostachya_E01sheath_RNAseq_forward_paired.fq.gz Ecdeiocolea_monostachya_E01sheath_RNAseq_forward_unpaired.fq.gz Ecdeiocolea_monostachya_E01sheath_RNAseq_reverse_paired.fq.gz Ecdeiocolea_monostachya_E01sheath_RNAseq_reverse_unpaired.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:10 MINLEN:36 > Ecdeiocolea_monostachya_E01sheath_trimmomatic.run.log 2>&1 &
+java -jar trimmomatic-0.36.jar PE -threads 4 -phred33 IHP472_8_1.fq.gz IHP472_8_2.fq.gz Ecdeiocolea_monostachya_E01root_RNAseq_forward_paired.fq.gz Ecdeiocolea_monostachya_E01root_RNAseq_forward_unpaired.fq.gz Ecdeiocolea_monostachya_E01root_RNAseq_reverse_paired.fq.gz Ecdeiocolea_monostachya_E01root_RNAseq_reverse_unpaired.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10 LEADING:5 TRAILING:5 SLIDINGWINDOW:4:10 MINLEN:36 > Ecdeiocolea_monostachya_E01root_trimmomatic.run.log 2>&1 &
+```
+
+### *De novo* transcriptome assembly
+*De novo* transcriptome assembly was performed using `Trinity` version 2.4.0.
+
+```bash
+./Trinity --seqType fq --max_memory 180G --left Ecdeiocolea_monostachya_E01flower_RNAseq_forward_paired.fq --right Ecdeiocolea_monostachya_E01flower_RNAseq_reverse_paired.fq --CPU 48 > Ecdeiocolea_monostachya_E01flower.run.log 2>&1 &
+mv trinity_out_dir/Trinity.fasta ../Ecdeiocolea_monostachya_E01flower_trinity_assembly_v3.fa
+rm -R trinity_out_dir
+
+./Trinity --seqType fq --max_memory 180G --left Ecdeiocolea_monostachya_E01sheath_RNAseq_forward_paired.fq --right Ecdeiocolea_monostachya_E01sheath_RNAseq_reverse_paired.fq --CPU 48 > Ecdeiocolea_monostachya_E01sheath.run.log 2>&1 &
+mv trinity_out_dir/Trinity.fasta ../Ecdeiocolea_monostachya_E01sheath_trinity_assembly_v3.fa
+rm -R trinity_out_dir
+
+./Trinity --seqType fq --max_memory 180G --left Ecdeiocolea_monostachya_E01root_RNAseq_forward_paired.fq --right Ecdeiocolea_monostachya_E01root_RNAseq_reverse_paired.fq --CPU 48 > Ecdeiocolea_monostachya_E01root.run.log 2>&1 &
+mv trinity_out_dir/Trinity.fasta ../Ecdeiocolea_monostachya_E01root_trinity_assembly_v3.fa
+rm -R trinity_out_dir
+```
+
+### Identification of contamination in RNAseq reads
+Tissue of *Ecdeiocolea monostachya* were sampled from plants in their native habitat, therefore bacteria and other microbes were likely sampled in parallel with plant tissue. To identify the degree of non-*Ecdeiocolea monostachya* RNA in samples, we use `kraken` to classify reads based on established NCBI data sets.
+
+```bash
+./bin/kraken2-build --download-library archaea --db plant_db --threads 48 > kraken2_build_archaea.log 2>&1 &
+./bin/kraken2-build --download-library bacteria --db plant_db --threads 48 > kraken2_build_bacteria.log 2>&1 &
+./bin/kraken2-build --download-library plasmid --db plant_db --threads 48 > kraken2_build_plasmid.log 2>&1 &
+./bin/kraken2-build --download-library viral --db plant_db --threads 48 > kraken2_build_viral.log 2>&1 &
+./bin/kraken2-build --download-library human --db plant_db --threads 48 > kraken2_build_human.log 2>&1 &
+./bin/kraken2-build --download-library fungi --db plant_db --threads 48 > kraken2_build_fungi.log 2>&1 &
+./bin/kraken2-build --download-library plant --db plant_db --threads 48 > kraken2_build_plant.log 2>&1 &
+./bin/kraken2-build --download-library protozoa --db plant_db --threads 48 > kraken2_build_protozoa.log 2>&1 &
+./bin/kraken2-build --download-library UniVec_core --db plant_db --threads 48 > kraken2_build_UniVec_core.log 2>&1 &
+./bin/kraken2-build --download-library nt --db plant_db --threads 48 > kraken2_build_nt_core.log 2>&1 &
+./bin/kraken2-build --download-taxonomy --db plant_db > kraken2_build_taxonomy.log 2>&1 &
+./bin/kraken2-build --build --db plant_db --threads 48 > kraken2_build_plant.log 2>&1 &
+./bin/kraken2-build --clean --db plant_db --threads 48
+
+./bin/kraken2 -db plant_db --gzip-compressed --threads 48 --unclassified-out Emo_E01F_unclassfied_reads#.fq --classified-out Emo_E01F_classfied_reads#.fq --report Emo_E01F_kraken2_report.txt --paired Ecdeiocolea_monostachya_E01flower_RNAseq_forward_paired.fq.gz Ecdeiocolea_monostachya_E01flower_RNAseq_reverse_paired.fq.gz > Emo_E01F_kraken2.log 2>&1 &
+./bin/kraken2 -db plant_db --gzip-compressed --threads 48 --unclassified-out Emo_E01R_unclassfied_reads#.fq --classified-out Emo_E01R_classfied_reads#.fq --report Emo_E01R_kraken2_report.txt --paired Ecdeiocolea_monostachya_E01root_RNAseq_forward_paired.fq.gz Ecdeiocolea_monostachya_E01root_RNAseq_reverse_paired.fq.gz > Emo_E01R_kraken2.log 2>&1 &
+./bin/kraken2 -db plant_db --gzip-compressed --threads 48 --unclassified-out Emo_E01S_unclassfied_reads#.fq --classified-out Emo_E01S_classfied_reads#.fq --report Emo_E01S_kraken2_report.txt --paired Ecdeiocolea_monostachya_E01sheath_RNAseq_forward_paired.fq.gz Ecdeiocolea_monostachya_E01sheath_RNAseq_reverse_paired.fq.gz > Emo_E01S_kraken2.log 2>&1 &
+```
+
+Similar levels of bacterial, hominid, archaeal, and viral contamination were observed in all RNA samples (see table below).
+
+| Tissue  | Total | Bacteria | Eukaryota (Homo) | Archaea | Viruses |
+|:-------:|:-----:|:--------:|:----------------:|:-------:|:-------:|
+| Flower  | 9.10% | 6.35%    | 2.59%            | 0.10%   | 0.06%   |
+| Root    | 9.64% | 6.65%    | 2.82%            | 0.11%   | 0.06%   |
+| Sheath  | 9.07% | 6.59%    | 2.32%            | 0.11%   | 0.05%   |
 
 
 ## Software for error correction in Nanopore assemblies
