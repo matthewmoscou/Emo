@@ -329,6 +329,13 @@ dev.off()
 
 ![alt text](figures/Emo_ONT_seqlen.png "Histogram of sequence lengths")
 
+Read quality was assessed with [pauvre](https://github.com/conchoecia/pauvre).
+
+```
+pauvre stats --fastq OND00003.fastq > OND00003.fastq.pauvre.stats 2>&1 &
+pauvre stats --fastq OND00009.fastq > OND00009.fastq.pauvre.stats 2>&1 &
+```
+
 ### *De novo* assembly using Wtdbg2 
 Wtdbg2 is a fuzzy Bruijn graph approach to long noisy reads assembly. Source code was cloned from Github from [wtdbg2](https://github.com/ruanjue/wtdbg2).
 
@@ -443,6 +450,33 @@ The distribution of scaffolds are shown in the following histogram (note that th
 
 ![alt text](figures/scaffold_lengths.png "Distribution of scaffold length (log10 scale)")
 
+#### k-mer analysis of MaSuRCA assembly 
+The [k-mer analysis toolkit (KAT)](https://github.com/TGAC/KAT) is a powerful set of tools that use k-mers to assess the quality of a genome. The first analysis uses `kat hist` to assess the k-mer distribution of the Illumina data. This plot is similar to the one generated earlier using `R`.
+
+```
+kat hist -t 96 EM009_E1_DSW*
+```
+
+![alt text](figures/kat.hist.png "k-mer histogram of Illumina sequencing data")
+
+`kat gcp` compared the k-mer distribution of the data relative to GC composition of the 27-mer. The data is displayed as a density plot.
+
+```
+kat gcp -t 96 EM009_E1_DSW*
+```
+
+![alt text](figures/kat-gcp.mx.png "k-mer frequency/GC content density plot of Illumina sequencing data")
+
+`kat comp` compares presence of k-mers in Illumina data relative to a genome sequence. Color coding indicates the occurence of k-mers in the genome sequence: black indicates the absence of a k-mer, red indicates a k-mer present in the genome once, and purple indicates a k-mer present twice in the genome. Green, blue, tan, and orange indiciate higher number of k-mers in the genome.
+
+```
+kat comp -t 96 'EM009_E1_DSW66909-V_HTGL5CCXY_L6_1.fq EM009_E1_DSW66909-V_HTGL5CCXY_L7_2.fq EM009_E1_DSW66909-V_HWHMWCCXY_L8_1.fq EM009_E1_DSW66921_HTGL5CCXY_L6_2.fq EM009_E1_DSW66909-V_HTGL5CCXY_L6_2.fq EM009_E1_DSW66909-V_HTH7NCCXY_L7_1.fq EM009_E1_DSW66909-V_HWHMWCCXY_L8_2.fq EM009_E1_DSW66921_HTGL5CCXY_L7_1.fq EM009_E1_DSW66909-V_HTGL5CCXY_L7_1.fq EM009_E1_DSW66909-V_HTH7NCCXY_L7_2.fq EM009_E1_DSW66921_HTGL5CCXY_L6_1.fq EM009_E1_DSW66921_HTGL5CCXY_L7_2.fq' Emo_MaSuRCA_v1.fa
+```
+
+![alt text](figures/kat-comp-Emo-main.mx.spectra-cn.x250.png "k-mer histogram of Illumina sequencing data")
+
+This two peaks of the plot represent the unique k-mers in the individual haploid genome (left peak) and the shared k-mers in both haploid genomes (right peak). 
+
 ### Annotation of the hybrid *Ecdeiocolea monostachya* genome
 Our strategy for annotating the genome of *Ecdeiocolea monostachya* includes the following steps:
   1. Identification of high confidence gene models based on aligned RNAseq reads (`hisat2`) and gene models using `Cufflinks` or `StringTie`
@@ -507,6 +541,29 @@ MaSuRCA clearly outperformed all other assembly approaches used thus far. Cuffli
 | MaSuRCA            | Cufflinks       | 95.1%    | 32.9%     | 62.2%      |  2.4%    |  2.5%   |
 | MaSuRCA            | StringTie       | 91.6%    | 38.4%     | 53.2%      |  2.3%    |  6.1%   |
 
+#### Purging haplotigs
+The sequenced *Ecdeiocolea monostachya* accession is highly heterozygous and divergent in sequence between haplotypes. To phase the haplotigs, we used [purge_haplotigs](https://bitbucket.org/mroachawri/purge_haplotigs/src/master/).
+
+```bash
+samtools faidx Emo_MaSuRCA_v1.fa
+minimap2 -t 36 -ax map-ont Emo_MaSuRCA_v1.fa OND00003.clean.fq.gz OND00009.clean.fq.gz --secondary=no | samtools sort -m 1G -o aligned.bam -T tmp.ali
+samtools index aligned.bam
+
+purge_haplotigs hist -b aligned.bam -g Emo_MaSuRCA_v1.fa -t 36
+
+purge_haplotigs cov -i aligned.bam.gencov -l 15 -m 62 -h 115 -o coverage_stats.csv -j 80 -s 80
+
+purge_haplotigs purge -g Emo_MaSuRCA_v1.fa -c coverage_stats.csv -t 36 -d -b aligned.bam
+
+```
+
+Using BUSCO, we assessed the ability of `purge_haplotigs` to separate the haploid genomes. While some improvement was achieved with duplicated genes reduced from 62.2% to 39.8%, it appears to come at the cost of reduced BUSCO gene representation from 95.1% to 91.0%.
+
+| Assembly           | Genome        | Complete | Singleton | Duplicated | Fragment | Missing |
+|:------------------:|:-------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+| MaSuRCA            | Complete      | 95.1%    | 32.9%     | 62.2%      |  2.4%    |  2.5%   |
+| MaSuRCA            | Haploid       | 91.0%    | 51.2%     | 39.8%      |  4.0%    |  5.0%   |
+
 #### Identifying heterozygous contigs using Redundans
 `Redundans` was used to remove heterozygous contigs from the genome (predicted heterozygosity of 2.4%).
 
@@ -542,29 +599,6 @@ dev.off()
 ![alt text](figures/barley_FLcDNA_GC_distribution.png "Distribution of GC content in H. vulgare FLcDNA")
 
 In contrast, the analysis of full length cDNAs from *Hordeum vulgare* (barley) clearly show the bimodal distribution. This result is critical, as it means that a single HMM model can be generated for training *ab initio* gene prediction software.
-
-#### Purging haplotigs
-The sequenced *Ecdeiocolea monostachya* accession is highly heterozygous and divergent in sequence between haplotypes. To phase the haplotigs, we used [purge_haplotigs](https://bitbucket.org/mroachawri/purge_haplotigs/src/master/).
-
-```bash
-samtools faidx Emo_MaSuRCA_v1.fa
-minimap2 -t 36 -ax map-ont Emo_MaSuRCA_v1.fa OND00003.clean.fq.gz OND00009.clean.fq.gz --secondary=no | samtools sort -m 1G -o aligned.bam -T tmp.ali
-samtools index aligned.bam
-
-purge_haplotigs hist -b aligned.bam -g Emo_MaSuRCA_v1.fa -t 36
-
-purge_haplotigs cov -i aligned.bam.gencov -l 15 -m 62 -h 115 -o coverage_stats.csv -j 80 -s 80
-
-purge_haplotigs purge -g Emo_MaSuRCA_v1.fa -c coverage_stats.csv -t 36 -d -b aligned.bam
-
-```
-
-Using BUSCO, we assessed the ability of `purge_haplotigs` to separate the haploid genomes. While some improvement was achieved with duplicated genes reduced from 62.2% to 39.8%, it appears to come at the cost of reduced BUSCO gene representation from 95.1% to 91.0%.
-
-| Assembly           | Genome        | Complete | Singleton | Duplicated | Fragment | Missing |
-|:------------------:|:-------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
-| MaSuRCA            | Complete      | 95.1%    | 32.9%     | 62.2%      |  2.4%    |  2.5%   |
-| MaSuRCA            | Haploid       | 91.0%    | 51.2%     | 39.8%      |  4.0%    |  5.0%   |
 
 #### Transdecoder and InterProScan
 We designated gene models identified using `hisat2`/`cufflinks` as high confidence gene models and identify the longest open reading frames. It is likely that many of these gene models will be improved with *ab initio* gene prediction, but we will maintain this initial set as an RNAseq evidence reference data set. After identification, we use InterProScan to identify domains in predicted proteins.
