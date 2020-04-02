@@ -514,7 +514,7 @@ MaSuRCA clearly outperformed all other assembly approaches used thus far. Cuffli
 python redundans.py -f Emo_MaSuRCA_v1.fa -o Emo_redundans -t 72 --nocleaning --nogapclosing > Emo_redundans.log 2>&1 &
 ```
 
-Using BUSCO, we found that the resulting non-redudant set contained 91.0% complete BUSCO genes (41.3% singletons, 49.7% duplicated, 2.6% fragmented, and 6.4% missing genes) based on `StringTie` gene models. As this did not significantly improve the number of duplicated genes, we dropped this approach at this stage.
+Using BUSCO, we found that the resulting non-redundant set contained 91.0% complete BUSCO genes (41.3% singletons, 49.7% duplicated, 2.6% fragmented, and 6.4% missing genes) based on `StringTie` gene models. As this did not significantly improve the number of duplicated genes, we dropped this approach at this stage.
 
 #### Distribution of GC percent in *Ecdeiocolea monostachya* 
 In sequencing genes from grass species, several groups found that the grasses have a bimodal distribution of GC content in genes. To investigate if genes in *Ecdeiocolea monostachya* experience a similar phenomena, we evaluated the distribution of GC content in Cufflinks predicted genes.
@@ -543,6 +543,29 @@ dev.off()
 
 In contrast, the analysis of full length cDNAs from *Hordeum vulgare* (barley) clearly show the bimodal distribution. This result is critical, as it means that a single HMM model can be generated for training *ab initio* gene prediction software.
 
+#### Purging haplotigs
+The sequenced *Ecdeiocolea monostachya* accession is highly heterozygous and divergent in sequence between haplotypes. To phase the haplotigs, we used [purge_haplotigs](https://bitbucket.org/mroachawri/purge_haplotigs/src/master/).
+
+```bash
+samtools faidx Emo_MaSuRCA_v1.fa
+minimap2 -t 36 -ax map-ont Emo_MaSuRCA_v1.fa OND00003.clean.fq.gz OND00009.clean.fq.gz --secondary=no | samtools sort -m 1G -o aligned.bam -T tmp.ali
+samtools index aligned.bam
+
+purge_haplotigs hist -b aligned.bam -g Emo_MaSuRCA_v1.fa -t 36
+
+purge_haplotigs cov -i aligned.bam.gencov -l 15 -m 62 -h 115 -o coverage_stats.csv -j 80 -s 80
+
+purge_haplotigs purge -g Emo_MaSuRCA_v1.fa -c coverage_stats.csv -t 36 -d -b aligned.bam
+
+```
+
+Using BUSCO, we assessed the ability of `purge_haplotigs` to separate the haploid genomes. While some improvement was achieved with duplicated genes reduced from 62.2% to 39.8%, it appears to come at the cost of reduced BUSCO gene representation from 95.1% to 91.0%.
+
+| Assembly           | Genome        | Complete | Singleton | Duplicated | Fragment | Missing |
+|:------------------:|:-------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+| MaSuRCA            | Complete      | 95.1%    | 32.9%     | 62.2%      |  2.4%    |  2.5%   |
+| MaSuRCA            | Haploid       | 91.0%    | 51.2%     | 39.8%      |  4.0%    |  5.0%   |
+
 #### Transdecoder and InterProScan
 We designated gene models identified using `hisat2`/`cufflinks` as high confidence gene models and identify the longest open reading frames. It is likely that many of these gene models will be improved with *ab initio* gene prediction, but we will maintain this initial set as an RNAseq evidence reference data set. After identification, we use InterProScan to identify domains in predicted proteins.
 
@@ -553,6 +576,19 @@ TransDecoder-TransDecoder-v5.5.0/TransDecoder.LongOrfs -m 50 -t Emo_MaSuRCA_v1_t
 TransDecoder-TransDecoder-v5.5.0/TransDecoder.Predict -t Emo_MaSuRCA_v1_transcripts.fa
 TransDecoder-TransDecoder-v5.5.0/util/cdna_alignment_orf_to_genome_orf.pl Emo_MaSuRCA_v1_transcripts.fa.transdecoder.gff3 Emo_MaSuRCA_v1_transcripts.gff3 Emo_MaSuRCA_v1_transcripts.fa > Emo_MaSuRCA_v1_transcripts.fa.transdecoder.genome.gff3
 ./my_interproscan/interproscan-5.27-66.0/interproscan.sh --cpu 72 --output-dir . --input Emo_MaSuRCA_v1_transcripts.fa.transdecoder.pep --iprlookup --seqtype p --appl Coils,Gene3D,ProSitePatterns,Pfam,PANTHER,SUPERFAMILY > Emo_MaSuRCA_v1_transcripts.fa.transdecoder_interproscan.log 2>&1 &
+```
+
+The previous approach did not use Pfam or BLAST (UniProt) to predict gene models for protein prediction. We incorporate this step to improve protein model prediction.
+
+```
+hmmscan --cpu 12 --domtblout pfam.domtblout /scratch/moscou/pfam/Pfam-A.hmm Emo_MaSuRCA_v1_cuffmerge_transcripts.fa.transdecoder_dir/longest_orfs.pep
+TransDecoder.Predict -t Emo_MaSuRCA_v1_transcripts.fa --retain_pfam_hits pfam.domtblout
+```
+
+This annotation will eventually incorporate BLAST, although this takes substantially longer to run than HMMer. The command for BLAST can be found below.
+
+```
+blastp -query Emo_MaSuRCA_v1_cuffmerge_transcripts.fa.transdecoder_dir/longest_orfs.pep -db /scratch/moscou/uniprot/uniref90.fasta  -max_target_seqs 1 -outfmt 6 -evalue 1e-5 -num_threads 12 > blastp.outfmt6
 ```
 
 ### Maker annotation pipeline
@@ -595,6 +631,21 @@ We modify the files `maker_exe.ctl`, `maker_opts.ctl`, and `maker_bopts.ctl` wit
 maker maker_exe.ctl maker_opts.ctl maker_bopts.ctl
 ```
 
+
+```bash
+fasta_merge -d Emo_MaSuRCA_v1_master_datastore_index.log
+gff3_merge -d Emo_MaSuRCA_v1_master_datastore_index.log
+```
+
+### Assessment of diverse annotation pipelines
+
+
+| Dataset         | Origin                          | Complete | Singleton | Duplicated | Fragment | Missing |
+|:---------------:|:-------------------------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+| Transcripts     | Cufflinks                       | 95.2%    | 33.0%     | 62.2%      |  2.4%    |  2.4%   |
+| Proteins        | Cufflinks + Transdecoder        | 92.6%    | 35.4%     | 57.2%      |  3.3%    |  4.1%   |
+| Proteins        | Cufflinks + Transdecoder + Pfam | 93.5%    | 35.0%     | 58.5%      |  3.3%    |  3.2%   |
+| Proteins        | MAKER                           | 81.2%    | 26.3%     | 54.9%      |  9.7%    |  9.1%   |
 
 ## RNAseq of *Ecdeiocolea monostachya*
 RNAseq was performed on flower, sheath, and root tissue of *Ecdeiocolea monostachya*. Here we trim reads, perform *de novo* transcriptome assembly, and estimate the degree of contamination in all samples.
