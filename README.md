@@ -672,14 +672,16 @@ gff3_merge -d Emo_MaSuRCA_v1_master_datastore_index.log
 ```
 
 ### Assessment of diverse annotation pipelines
+BUSCO was used to assess representation of this benchmark set of genes in the transcripts, predicted proteins from Transdecoder with and without Pfam information, and *ab initio* gene prediction using the MAKER pipeline.
 
+| Dataset               | Origin                          | Gene Models | Complete | Singleton | Duplicated | Fragment | Missing |
+|:---------------------:|:-------------------------------:|:-----------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+| Transcripts           | Cufflinks                       |   84,700    |  95.2%   |  33.0%    |  62.2%     |  2.4%    |  2.4%   |
+| Proteins              | Cufflinks + Transdecoder        |   62,132    |  92.6%   |  35.4%    |  57.2%     |  3.3%    |  4.1%   |
+| Proteins              | Cufflinks + Transdecoder + Pfam |   90,736    |  93.5%   |  35.0%    |  58.5%     |  3.3%    |  3.2%   |
+| Transcripts/Proteins  | MAKER                           |  539,444    |  81.2%   |  26.3%    |  54.9%     |  9.7%    |  9.1%   |
 
-| Dataset         | Origin                          | Complete | Singleton | Duplicated | Fragment | Missing |
-|:---------------:|:-------------------------------:|:--------:|:---------:|:----------:|:--------:|:-------:|
-| Transcripts     | Cufflinks                       | 95.2%    | 33.0%     | 62.2%      |  2.4%    |  2.4%   |
-| Proteins        | Cufflinks + Transdecoder        | 92.6%    | 35.4%     | 57.2%      |  3.3%    |  4.1%   |
-| Proteins        | Cufflinks + Transdecoder + Pfam | 93.5%    | 35.0%     | 58.5%      |  3.3%    |  3.2%   |
-| Proteins        | MAKER                           | 81.2%    | 26.3%     | 54.9%      |  9.7%    |  9.1%   |
+At this stage, the predicted proteins from the Cufflinks/Transdecoder with Pfam appears to be the best pipeline, although the Cufflinks and MAKER data sets are likely useful for gene family analysis.
 
 ## RNAseq of *Ecdeiocolea monostachya*
 RNAseq was performed on flower, sheath, and root tissue of *Ecdeiocolea monostachya*. Here we trim reads, perform *de novo* transcriptome assembly, and estimate the degree of contamination in all samples.
