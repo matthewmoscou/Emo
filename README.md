@@ -674,12 +674,14 @@ gff3_merge -d Emo_MaSuRCA_v1_master_datastore_index.log
 ### Assessment of diverse annotation pipelines
 BUSCO was used to assess representation of this benchmark set of genes in the transcripts, predicted proteins from Transdecoder with and without Pfam information, and *ab initio* gene prediction using the MAKER pipeline.
 
-| Dataset               | Origin                          | Gene Models | Complete | Singleton | Duplicated | Fragment | Missing |
-|:---------------------:|:-------------------------------:|:-----------:|:--------:|:---------:|:----------:|:--------:|:-------:|
-| Transcripts           | Cufflinks                       |   84,700    |  95.2%   |  33.0%    |  62.2%     |  2.4%    |  2.4%   |
-| Proteins              | Cufflinks + Transdecoder        |   62,132    |  92.6%   |  35.4%    |  57.2%     |  3.3%    |  4.1%   |
-| Proteins              | Cufflinks + Transdecoder + Pfam |   90,736    |  93.5%   |  35.0%    |  58.5%     |  3.3%    |  3.2%   |
-| Transcripts/Proteins  | MAKER                           |  539,444    |  81.2%   |  26.3%    |  54.9%     |  9.7%    |  9.1%   |
+| Identifier | Dataset               | Origin                                               | Gene Models | Complete | Singleton | Duplicated | Fragment | Missing |
+|:----------:|:---------------------:|:----------------------------------------------------:|:-----------:|:--------:|:---------:|:----------:|:--------:|:-------:|
+|   v0       | Transcripts/Proteins  | MAKER                                                |  539,444    |  81.2%   |  26.3%    |  54.9%     |  9.7%    |  9.1%   |
+|   v1.1     | Transcripts           | Cufflinks                                            |   84,700    |  95.2%   |  33.0%    |  62.2%     |  2.4%    |  2.4%   |
+|   v1.1     | Proteins              | Cufflinks/Transdecoder                               |   62,132    |  92.6%   |  35.4%    |  57.2%     |  3.3%    |  4.1%   |
+|   v1.2     | Proteins              | Cufflinks/Transdecoder/Pfam                          |   90,736    |  93.5%   |  35.0%    |  58.5%     |  3.3%    |  3.2%   |
+|   v1.2     | Proteins              | Cufflinks/Transdecoder/Pfam/Longest ORF              |   65,749    |  91.1%   |  37.5%    |  53.6%     |  3.7%    |  5.2%   |
+|   v1.2     | Proteins              | Cufflinks/Transdecoder/Pfam/Longest ORF/Non-Redunant |   36,443    |  90.0%   |  50.6%    |  39.4%     |  3.6%    |  6.4%   |
 
 At this stage, the predicted proteins from the Cufflinks/Transdecoder with Pfam appears to be the best pipeline, although the Cufflinks and MAKER data sets are likely useful for gene family analysis.
 
